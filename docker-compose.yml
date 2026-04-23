@@ -26,7 +26,7 @@ services:
 
   worker:
  #  build: ./worker
-    image: pokfinner/worker:latest
+    image: babanila/worker:1.0
     depends_on:
       redis:
         condition: service_healthy 
