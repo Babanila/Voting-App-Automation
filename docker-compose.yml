@@ -3,7 +3,7 @@
 
 services:
   vote:
-    image: pokfinner/vote:latest
+    image: babanila/vote:1.0
  #  build: ./vote
     depends_on:
       redis:
