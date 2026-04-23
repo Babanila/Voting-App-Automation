@@ -14,7 +14,7 @@ services:
       - back-tier
 
   result:
-    image: pokfinner/result:latest
+    image: babanila/result:1.0
  #  build: ./result
     depends_on:
       db:
