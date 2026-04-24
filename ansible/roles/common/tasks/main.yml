@@ -1,0 +1,19 @@
+- name: Install dependencies
+  apt:
+    update_cache: yes
+    name:
+      - docker.io
+      - docker-compose
+    state: present
+
+- name: Enable Docker
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+
+- name: Add ubuntu user to docker group
+  user:
+    name: ubuntu
+    groups: docker
+    append: yes
