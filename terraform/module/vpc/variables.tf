@@ -1,4 +1,4 @@
-variable "ami_image_name" {
+variable "ami_id" {
   type = string
 }
 
