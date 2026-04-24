@@ -116,6 +116,14 @@ resource "aws_security_group" "frontend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # HTTPS
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
    ingress {
     description = "SSH from my IP"
     from_port   = 22
@@ -144,8 +152,8 @@ resource "aws_security_group" "backend_sg" {
 
   ingress {
     description = "Allow Frontend SG access"
-    from_port   = 3000
-    to_port     = 3000
+    from_port   = 0
+    to_port     = 65535
     protocol    = "tcp"
     security_groups = [aws_security_group.frontend_sg.id]
   }
