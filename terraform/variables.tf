@@ -31,7 +31,12 @@ variable "aws_region" {
 
 variable "author_name" {
   type        = string
-  description = "The name of the author to include in the EC2 instance tags."
+  description = "Used for naming resources"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", lower(var.author_name)))
+    error_message = "author_name must contain only lowercase letters, numbers, and hyphens."
+  }
 }
 
 variable "my_ip_cidr" {

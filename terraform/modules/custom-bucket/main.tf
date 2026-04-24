@@ -1,6 +1,6 @@
 # Create S3 Bucket for State Storage
 resource "aws_s3_bucket" "tfstate" {
-  bucket        = var.name
+  bucket        = lower(var.name)
   force_destroy = true
   tags          = var.tags
 }
@@ -34,7 +34,7 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
 
 # Create DynamoDB Table for State Locking
 resource "aws_dynamodb_table" "tflock" {
-  name         = "tflock-${var.name}"
+  name         = "tflock-${lower(var.name)}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
 
