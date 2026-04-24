@@ -2,6 +2,11 @@
 *.env
 !*.env.example
 
+
+# SSH Keys (SSH & Ansible Authentication)
+*.pem
+
+
 # Local provider/module cache & backend config
 .terraform/
 **/.terraform/*
