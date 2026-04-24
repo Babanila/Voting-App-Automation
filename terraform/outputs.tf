@@ -6,11 +6,11 @@ output "frontend_public_dns" {
   value = aws_instance.frontend.public_dns
 }
 
-output "backend_public_ip" {
+output "backend_private_ip" {
   value = aws_instance.backend.private_ip
 }
 
-output "database_public_ip" {
+output "database_private_ip" {
   value = aws_instance.database.private_ip
 }
 
