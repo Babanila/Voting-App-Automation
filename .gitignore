@@ -1,3 +1,7 @@
+# Environment Variable Files
+*.env
+!*.env.example
+
 # Local provider/module cache & backend config
 .terraform/
 **/.terraform/*
