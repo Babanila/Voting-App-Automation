@@ -18,15 +18,15 @@ module "backups_bucket" {
 module "custom_vpc" {
   source = "./modules/vpc"
 
-  aws_region     = var.aws_region
-  cidr_block     = var.cidr_block
+  aws_region         = var.aws_region
+  cidr_block         = var.cidr_block
   public_cidr_block  = var.public_cidr_block
   private_cidr_block = var.private_cidr_block
-  instance_type  = var.instance_type
-  ami_id = var.ami_id
-  key_pair_name  = var.key_pair_name
-  author_name    = var.author_name
-  my_ip_cidr     = var.my_ip_cidr
+  instance_type      = var.instance_type
+  ami_id             = var.ami_id
+  key_pair_name      = var.key_pair_name
+  author_name        = var.author_name
+  my_ip_cidr         = var.my_ip_cidr
 }
 
 
