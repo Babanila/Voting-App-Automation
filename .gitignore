@@ -2,6 +2,9 @@
 .terraform/
 **/.terraform/*
 
+*.lock.hcl
+!.terraform.lock.hcl
+
 # State files (contain sensitive data & are environment-specific)
 *.tfstate
 *.tfstate.*
