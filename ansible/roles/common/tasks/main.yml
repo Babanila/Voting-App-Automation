@@ -1,24 +1,46 @@
+- name: Install prerequisite packages
+  apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: yes
+
+- name: Add Docker GPG key
+  shell: |
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  args:
+    creates: /etc/apt/keyrings/docker.gpg
+
+- name: Add Docker repository
+  shell: |
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  args:
+    creates: /etc/apt/sources.list.d/docker.list
+
 - name: Update apt cache
   apt:
     update_cache: yes
 
-- name: Install base dependencies
+- name: Install Python dependencies
   apt:
     name:
-      - docker.io
       - python3-pip
     state: present
 
-# Install Docker Compose v2 plugin
-- name: Install Docker Compose plugin
+- name: Install Docker Engine + Compose plugin
   apt:
-    name: docker-compose-plugin
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
     state: present
-
-# Install Docker SDK
-- name: Install Docker SDK for Python
-  pip:
-    name: docker
 
 - name: Enable and start Docker
   systemd:
@@ -32,3 +54,9 @@
     name: ubuntu
     groups: docker
     append: yes
+
+- name: Install Docker SDK for Python
+  pip:
+    name: docker
+    executable: pip3
+    state: present

@@ -3,8 +3,13 @@
     src: docker-compose.yml.j2
     dest: /home/ubuntu/docker-compose.yml
 
-- name: Run backend container
-  docker_compose:
-    project_src: /home/ubuntu
-    state: present
-    pull: yes
+- name: Pull backend images
+  command: docker compose pull
+  args:
+    chdir: /home/ubuntu
+  ignore_errors: yes
+
+- name: Start backend containers
+  command: docker compose up -d
+  args:
+    chdir: /home/ubuntu
