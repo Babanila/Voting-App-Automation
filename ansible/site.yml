@@ -1,0 +1,109 @@
+---
+- name: Provision infrastructure with Terraform
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Initialize Terraform
+      command: terraform init
+      args:
+        chdir: ../terraform
+
+    - name: Apply Terraform
+      command: terraform apply -auto-approve
+      args:
+        chdir: ../terraform
+
+    - name: Get Terraform outputs
+      command: terraform output -json
+      args:
+        chdir: ../terraform
+      register: tf_output
+
+    - name: Parse outputs from Terraform
+      set_fact:
+        tf: "{{ tf_output.stdout | from_json }}"
+
+    # Add frontend
+    - name: Add frontend host
+      add_host:
+        name: frontend
+        groups: frontend
+        ansible_host: "{{ tf.frontend_public_ip.value }}"
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+    # Wait for SSH readiness on frontend only
+    # (Private instances will be reachable via ProxyJump once frontend is ready)
+    - name: Wait for SSH on frontend
+      wait_for:
+        host: "{{ tf.frontend_public_ip.value }}"
+        port: 22
+        timeout: 120
+
+    - name: Add delay for all instances to fully initialize
+      pause:
+        seconds: 30
+
+    # Add backend via bastion
+    - name: Add backend host
+      add_host:
+        name: backend
+        groups: backend
+        ansible_host: "{{ tf.backend_private_ip.value }}"
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}"
+
+    # Add database via bastion
+    - name: Add database host
+      add_host:
+        name: database
+        groups: database
+        ansible_host: "{{ tf.database_private_ip.value }}"
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}"
+
+
+# Bootstrap Python because it's required for Ansible
+- name: Bootstrap Python on all nodes
+  hosts: frontend:backend:database
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Install Python3
+      raw: |
+        sudo apt update -y && sudo apt install -y python3
+      changed_when: false
+
+
+- name: Configure all nodes
+  hosts: frontend:backend:database
+  become: true
+  roles:
+    - common
+
+- name: Configure frontend node
+  hosts: frontend
+  become: true
+  roles:
+    - frontend
+
+- name: Configure backend node
+  hosts: backend
+  become: true
+  roles:
+    - backend
+
+- name: Configure database node
+  hosts: database
+  become: true
+  roles:
+    - database

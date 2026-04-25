@@ -1,0 +1,50 @@
+---
+- name: Destroy all infrastructure created by site.yml
+  hosts: localhost
+  gather_facts: no
+  vars_prompt:
+    - name: confirm_destroy
+      prompt: "⚠️  WARNING: This will destroy ALL AWS infrastructure (EC2 instances, VPC, security groups, etc.). Type 'yes' to confirm"
+      private: no
+
+  tasks:
+    - name: Verify user confirmation
+      fail:
+        msg: "Destruction cancelled - confirmation not received"
+      when: confirm_destroy != "yes"
+
+    - name: Display destruction warning
+      debug:
+        msg:
+          - "=========================================="
+          - "DESTROYING ALL INFRASTRUCTURE"
+          - "=========================================="
+          - "This will:"
+          - "  - Terminate all EC2 instances"
+          - "  - Delete VPC, subnets, security groups"
+          - "  - Remove NAT Gateway, EIP"
+          - "  - Delete S3 buckets and DynamoDB tables"
+          - "=========================================="
+
+    - name: Destroy Terraform infrastructure
+      command: terraform destroy -auto-approve
+      args:
+        chdir: ../terraform
+      register: destroy_output
+
+    - name: Display Terraform destroy output
+      debug:
+        var: destroy_output.stdout_lines
+
+    - name: Verify destruction status
+      debug:
+        msg:
+          - ""
+          - "=========================================="
+          - "✓ Infrastructure destruction complete"
+          - "=========================================="
+          - "All AWS resources have been removed"
+          - "To reapply infrastructure, run:"
+          - "  cd ansible"
+          - "  ansible-playbook site.yml"
+          - "=========================================="

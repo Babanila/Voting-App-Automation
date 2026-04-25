@@ -1,0 +1,35 @@
+- name: Ensure app directory exists
+  file:
+    path: /home/ubuntu/app
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: '0755'
+
+- name: Copy docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: /home/ubuntu/app/docker-compose.yml
+    owner: ubuntu
+    group: ubuntu
+    mode: '0644'
+
+# Explicit image pull to avoid issues with older Docker versions and ensure we have the latest image
+- name: Pull PostgreSQL image
+  community.docker.docker_image:
+    name: "{{ db_image }}"
+    source: pull
+
+# Use modern Docker Compose (v2)
+- name: Start PostgreSQL container
+  command: docker compose up -d
+  args:
+    chdir: /home/ubuntu/app
+
+- name: Wait for PostgreSQL container to be healthy
+  shell: docker ps --filter "name=postgres" --filter "health=healthy" --format "{{ '{{' }}.Names{{ '}}' }}"
+  register: healthy_container
+  until: healthy_container.stdout != ""
+  retries: 10
+  delay: 5
+  changed_when: false
