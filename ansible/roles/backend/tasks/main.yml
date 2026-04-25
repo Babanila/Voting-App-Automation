@@ -1,0 +1,15 @@
+- name: Copy docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: /home/ubuntu/docker-compose.yml
+
+- name: Pull backend images
+  command: docker compose pull
+  args:
+    chdir: /home/ubuntu
+  ignore_errors: true
+
+- name: Start backend containers
+  command: docker compose up -d
+  args:
+    chdir: /home/ubuntu
