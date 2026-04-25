@@ -26,9 +26,10 @@
   args:
     chdir: /home/ubuntu/app
 
-# Wait for DB port
-- name: Wait for PostgreSQL
-  wait_for:
-    port: 5432
-    delay: 5
-    timeout: 60
+- name: Wait for PostgreSQL container to be healthy
+  shell: docker ps --filter "name=postgres" --filter "health=healthy" --format "{{ '{{' }}.Names{{ '}}' }}"
+  register: healthy_container
+  until: healthy_container.stdout != ""
+  retries: 10
+  delay: 5
+  changed_when: false
