@@ -4,6 +4,7 @@
     dest: /home/ubuntu/docker-compose.yml
 
 - name: Run backend container
-  command: docker compose up -d
-  args:
-    chdir: /home/ubuntu
+  docker_compose:
+    project_src: /home/ubuntu
+    state: present
+    pull: yes
