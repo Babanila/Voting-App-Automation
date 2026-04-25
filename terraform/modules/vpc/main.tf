@@ -134,16 +134,16 @@ resource "aws_security_group" "frontend_sg" {
 
   ingress {
     description = "Vote application port"
-    from_port   = 8081
-    to_port     = 8081
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     description = "Result application port"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 8081
+    to_port     = 8081
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -168,8 +168,8 @@ resource "aws_security_group" "backend_sg" {
 
   ingress {
     description = "Allow Frontend SG access"
-    from_port   = 0
-    to_port     = 65535
+    from_port   = 3000
+    to_port     = 3000
     protocol    = "tcp"
     security_groups = [aws_security_group.frontend_sg.id]
   }
