@@ -116,3 +116,12 @@ site.yml
    └── Applies "database" role
            └── Renders docker-compose.yml
            └── Runs postgres
+
+
+## Ansible orchestrator (Ansible SSHes THROUGH frontend)
+Ansible (local/CI)
+    │
+    └── SSH → Frontend (public EC2)
+            │
+            |── SSH → Backend (private EC2)
+            └── SSH → Database (private EC2)
