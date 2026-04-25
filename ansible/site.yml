@@ -65,10 +65,34 @@
         host: "{{ tf.frontend_public_ip.value }}"
         port: 22
         timeout: 120
-      
-    - name: Add a small delay for instances to fully initialize
+
+    - name: Add delay for all instances to fully initialize
       pause:
-        seconds: 10
+        seconds: 30
+
+    - name: Test SSH connectivity to backend via bastion
+      shell: |
+        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+        -i {{ ssh_key_path }} \
+        -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}" \
+        ubuntu@{{ tf.backend_private_ip.value }} 'echo Backend SSH OK'
+      retries: 3
+      delay: 10
+      register: backend_ssh
+      until: backend_ssh.rc == 0
+      changed_when: false
+
+    - name: Test SSH connectivity to database via bastion
+      shell: |
+         ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+          -i {{ ssh_key_path }} \
+          -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}" \
+          ubuntu@{{ tf.database_private_ip.value }} 'echo Database SSH OK'
+      retries: 3
+      delay: 10
+      register: database_ssh
+      until: database_ssh.rc == 0
+      changed_when: false
 
 
 # Bootstrap Python because it's required for Ansible

@@ -7,7 +7,7 @@
   command: docker compose pull
   args:
     chdir: /home/ubuntu
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Start backend containers
   command: docker compose up -d
