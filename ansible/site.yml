@@ -34,30 +34,6 @@
         ansible_ssh_private_key_file: "{{ ssh_key_path }}"
         ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
 
-    # Add backend via bastion
-    - name: Add backend host
-      add_host:
-        name: backend
-        groups: backend
-        ansible_host: "{{ tf.backend_private_ip.value }}"
-        ansible_user: ubuntu
-        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
-        ansible_ssh_common_args: >
-          -o StrictHostKeyChecking=no
-          -o ProxyJump=ubuntu@{{ tf.frontend_public_ip.value }}
-
-    # Add database via bastion
-    - name: Add database host
-      add_host:
-        name: database
-        groups: database
-        ansible_host: "{{ tf.database_private_ip.value }}"
-        ansible_user: ubuntu
-        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
-        ansible_ssh_common_args: >
-          -o StrictHostKeyChecking=no
-          -o ProxyJump=ubuntu@{{ tf.frontend_public_ip.value }}
-
     # Wait for SSH readiness on frontend only
     # (Private instances will be reachable via ProxyJump once frontend is ready)
     - name: Wait for SSH on frontend
@@ -70,29 +46,29 @@
       pause:
         seconds: 30
 
-    - name: Test SSH connectivity to backend via bastion
-      shell: |
-        ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
-        -i {{ ssh_key_path }} \
-        -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}" \
-        ubuntu@{{ tf.backend_private_ip.value }} 'echo Backend SSH OK'
-      retries: 3
-      delay: 10
-      register: backend_ssh
-      until: backend_ssh.rc == 0
-      changed_when: false
+    # Add backend via bastion
+    - name: Add backend host
+      add_host:
+        name: backend
+        groups: backend
+        ansible_host: "{{ tf.backend_private_ip.value }}"
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}"
 
-    - name: Test SSH connectivity to database via bastion
-      shell: |
-         ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
-          -i {{ ssh_key_path }} \
-          -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}" \
-          ubuntu@{{ tf.database_private_ip.value }} 'echo Database SSH OK'
-      retries: 3
-      delay: 10
-      register: database_ssh
-      until: database_ssh.rc == 0
-      changed_when: false
+    # Add database via bastion
+    - name: Add database host
+      add_host:
+        name: database
+        groups: database
+        ansible_host: "{{ tf.database_private_ip.value }}"
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+        ansible_ssh_common_args: >-
+          -o StrictHostKeyChecking=no
+          -o ProxyCommand="ssh -o StrictHostKeyChecking=no -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}"
 
 
 # Bootstrap Python because it's required for Ansible
