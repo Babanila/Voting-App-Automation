@@ -36,7 +36,7 @@
         ansible_host: "{{ item.ip }}"
         ansible_user: ubuntu
         ansible_ssh_private_key_file: "{{ ssh_key_path }}"
-        ansible_ssh_common_args: "{{ item.ssh_args | default('') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ item.ssh_args | default('') }}"
       loop:
         - name: frontend
           group: frontend
@@ -44,11 +44,11 @@
         - name: backend
           group: backend
           ip: "{{ tf.backend_private_ip.value }}"
-          ssh_args: "-o ProxyCommand='ssh -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}'"
+          ssh_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}'"
         - name: database
           group: database
           ip: "{{ tf.database_private_ip.value }}"
-          ssh_args: "-o ProxyCommand='ssh -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}'"
+          ssh_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}'"
 
 - name: Configure all nodes
   hosts: frontend:backend:database

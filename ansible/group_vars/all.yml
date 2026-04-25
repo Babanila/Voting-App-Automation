@@ -1,0 +1,31 @@
+# Container Images
+frontend_vote_image: babanila/vote:1.0
+frontend_result_image: babanila/result:1.0
+backend_worker_image: babanila/worker:1.0
+redis_image: redis:7-alpine
+db_image: postgres:15-alpine
+
+# SSH Configuration
+ssh_key_path: ./babajide-useast1-dvft.pem 
+
+# Database Configuration
+db_user: postgres
+db_password: postgres
+db_username: postgres
+db_name: votes
+db_host: "{{ hostvars['database']['ansible_host'] }}"
+db_port: 5432
+
+# Redis Configuration
+redis_host: "{{ hostvars['backend']['ansible_host'] }}"
+redis_port: 6379
+
+FLASK_ENV: development
+
+# Postgres Configuration
+PORT: 80
+PG_HOST: "{{ hostvars['database']['ansible_host'] }}" 
+PG_PORT: 5432 
+PG_USER: postgres
+PG_PASSWORD: postgres
+PG_DATABASE: postgres

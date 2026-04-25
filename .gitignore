@@ -5,6 +5,7 @@
 
 # SSH Keys (SSH & Ansible Authentication)
 *.pem
+*.key
 
 
 # Local provider/module cache & backend config
