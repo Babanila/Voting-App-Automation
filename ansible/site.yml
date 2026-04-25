@@ -9,11 +9,6 @@
       args:
         chdir: ../terraform
 
-    - name: Terraform deployment Plan
-      command: terraform plan
-      args:
-        chdir: ../terraform
-
     - name: Apply Terraform
       command: terraform apply -auto-approve
       args:
@@ -29,26 +24,64 @@
       set_fact:
         tf: "{{ tf_output.stdout | from_json }}"
 
-    - name: Add hosts dynamically from Terraform outputs
+    # Add frontend
+    - name: Add frontend host
       add_host:
-        name: "{{ item.name }}"
-        groups: "{{ item.group }}"
-        ansible_host: "{{ item.ip }}"
+        name: frontend
+        groups: frontend
+        ansible_host: "{{ tf.frontend_public_ip.value }}"
         ansible_user: ubuntu
         ansible_ssh_private_key_file: "{{ ssh_key_path }}"
-        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ item.ssh_args | default('') }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+    # Add backend via bastion
+    - name: Add backend host
+      add_host:
+        name: backend
+        groups: backend
+        ansible_host: "{{ tf.backend_private_ip.value }}"
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+        ansible_ssh_common_args: >
+          -o StrictHostKeyChecking=no
+          -o ProxyJump=ubuntu@{{ tf.frontend_public_ip.value }}
+
+    # Add database via bastion
+    - name: Add database host
+      add_host:
+        name: database
+        groups: database
+        ansible_host: "{{ tf.database_private_ip.value }}"
+        ansible_user: ubuntu
+        ansible_ssh_private_key_file: "{{ ssh_key_path }}"
+        ansible_ssh_common_args: >
+          -o StrictHostKeyChecking=no
+          -o ProxyJump=ubuntu@{{ tf.frontend_public_ip.value }}
+
+    # Wait for SSH readiness (CRITICAL)
+    - name: Wait for SSH on all hosts
+      wait_for:
+        host: "{{ item }}"
+        port: 22
+        timeout: 120
       loop:
-        - name: frontend
-          group: frontend
-          ip: "{{ tf.frontend_public_ip.value }}"
-        - name: backend
-          group: backend
-          ip: "{{ tf.backend_private_ip.value }}"
-          ssh_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}'"
-        - name: database
-          group: database
-          ip: "{{ tf.database_private_ip.value }}"
-          ssh_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i {{ ssh_key_path }} -W %h:%p ubuntu@{{ tf.frontend_public_ip.value }}'"
+        - "{{ tf.frontend_public_ip.value }}"
+        - "{{ tf.backend_private_ip.value }}"
+        - "{{ tf.database_private_ip.value }}"
+
+
+# Bootstrap Python because it's required for Ansible
+- name: Bootstrap Python on all nodes
+  hosts: frontend:backend:database
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Install Python3
+      raw: |
+        sudo apt update -y && sudo apt install -y python3
+      changed_when: false
+
 
 - name: Configure all nodes
   hosts: frontend:backend:database
@@ -73,4 +106,3 @@
   become: true
   roles:
     - database
-
