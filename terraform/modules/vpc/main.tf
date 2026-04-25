@@ -175,6 +175,14 @@ resource "aws_security_group" "backend_sg" {
   }
 
   ingress {
+    description = "Allow SSH from Frontend Security Group"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    security_groups = [aws_security_group.frontend_sg.id]
+  }
+
+  ingress {
     description = "Allow Redis access from Frontend Security Group"
     from_port   = 6379
     to_port     = 6379
@@ -197,10 +205,18 @@ resource "aws_security_group" "backend_sg" {
 
 resource "aws_security_group" "database_sg" {
   name        = "Database-sg"
-  description = "Allow PostgreSQL access from Backend Security Group"
+  description = "Allow PostgreSQL and SSH access from Backend Security Group"
   vpc_id      = aws_vpc.custom_vpc.id
 
-   ingress {
+  ingress {
+    description = "Allow SSH from Frontend Security Group"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    security_groups = [aws_security_group.frontend_sg.id]
+  }
+
+  ingress {
     description = "Allow PostgreSQL access from Backend Security Group"
     from_port   = 5432
     to_port     = 5432
