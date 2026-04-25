@@ -58,16 +58,17 @@
           -o StrictHostKeyChecking=no
           -o ProxyJump=ubuntu@{{ tf.frontend_public_ip.value }}
 
-    # Wait for SSH readiness (CRITICAL)
-    - name: Wait for SSH on all hosts
+    # Wait for SSH readiness on frontend only
+    # (Private instances will be reachable via ProxyJump once frontend is ready)
+    - name: Wait for SSH on frontend
       wait_for:
-        host: "{{ item }}"
+        host: "{{ tf.frontend_public_ip.value }}"
         port: 22
         timeout: 120
-      loop:
-        - "{{ tf.frontend_public_ip.value }}"
-        - "{{ tf.backend_private_ip.value }}"
-        - "{{ tf.database_private_ip.value }}"
+      
+    - name: Add a small delay for instances to fully initialize
+      pause:
+        seconds: 10
 
 
 # Bootstrap Python because it's required for Ansible
