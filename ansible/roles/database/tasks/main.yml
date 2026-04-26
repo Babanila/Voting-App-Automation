@@ -30,6 +30,6 @@
   shell: docker ps --filter "name=postgres" --filter "health=healthy" --format "{{ '{{' }}.Names{{ '}}' }}"
   register: healthy_container
   until: healthy_container.stdout != ""
-  retries: 10
+  retries: 5
   delay: 5
   changed_when: false

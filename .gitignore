@@ -9,6 +9,7 @@
 
 # System files
 .DS_Store
+*.DS_Store
 
 # Local provider/module cache & backend config
 .terraform/
