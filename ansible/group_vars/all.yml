@@ -1,31 +1,31 @@
 # Container Images
-frontend_vote_image: babanila/vote:1.0
-frontend_result_image: babanila/result:1.0
-backend_worker_image: babanila/worker:1.0
-redis_image: redis:7-alpine
-db_image: postgres:15-alpine
+frontend_vote_image: "{{ lookup('env', 'FRONTEND_VOTE_IMAGE') }}"
+frontend_result_image: "{{ lookup('env', 'FRONTEND_RESULT_IMAGE') }}"
+backend_worker_image: "{{ lookup('env', 'BACKEND_WORKER_IMAGE') }}"
+redis_image: "{{ lookup('env', 'REDIS_IMAGE') }}"
+db_image: "{{ lookup('env', 'DB_IMAGE') }}"
 
 # SSH Configuration
-ssh_key_path: ./babajide-useast1-dvft.pem 
+ssh_key_path: "{{ lookup('env', 'SSH_KEY_PATH') }}"
 
 # Database Configuration
-db_user: postgres
-db_password: postgres
-db_username: postgres
-db_name: votes
+db_user: "{{ lookup('env', 'DB_USER') }}"
+db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+db_username: "{{ lookup('env', 'DB_USER') }}"
+db_name: "{{ lookup('env', 'DB_NAME') }}"
 db_host: "{{ hostvars['database']['ansible_host'] }}"
-db_port: 5432
+db_port: "{{ lookup('env', 'DB_PORT') }}"
 
 # Redis Configuration
 redis_host: "{{ hostvars['backend']['ansible_host'] }}"
-redis_port: 6379
+redis_port: "{{ lookup('env', 'REDIS_PORT') }}"
 
-FLASK_ENV: development
+FLASK_ENV: "{{ lookup('env', 'FLASK_ENV') }}"
 
 # Postgres Configuration
-PORT: 80
-pg_host: "{{ hostvars['database']['ansible_host'] }}" 
-pg_port: 5432 
-pg_user: postgres
-pg_password: postgres
-pg_database: postgres
+PORT: "{{ lookup('env', 'PORT') }}"
+pg_host: "{{ hostvars['database']['ansible_host'] }}"
+pg_port: "{{ lookup('env', 'PG_PORT') }}"
+pg_user: "{{ lookup('env', 'PG_USER') }}"
+pg_password: "{{ lookup('env', 'PG_PASSWORD') }}"
+pg_database: "{{ lookup('env', 'PG_DATABASE') }}"
