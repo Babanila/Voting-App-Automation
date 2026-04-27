@@ -217,6 +217,14 @@ resource "aws_security_group" "database_sg" {
   }
 
   ingress {
+    description = "Allow PostgreSQL access from Frontend Security Group"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    security_groups = [aws_security_group.frontend_sg.id]
+  }
+
+  ingress {
     description = "Allow PostgreSQL access from Backend Security Group"
     from_port   = 5432
     to_port     = 5432
