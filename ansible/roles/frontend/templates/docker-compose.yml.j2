@@ -18,4 +18,9 @@ services:
       DB_NAME: {{ db_name }}
       DB_USER: {{ db_user }}
       DB_PASSWORD: {{ db_password }}
+      PG_HOST: "{{ pg_host }}" 
+      PG_PORT: "{{ pg_port }}"
+      PG_USER: "{{ pg_user }}"
+      PG_PASSWORD: "{{ pg_password }}"
+      PG_DATABASE: "{{ pg_database }}"
     restart: always

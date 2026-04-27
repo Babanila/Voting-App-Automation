@@ -24,8 +24,8 @@ FLASK_ENV: development
 
 # Postgres Configuration
 PORT: 80
-PG_HOST: "{{ hostvars['database']['ansible_host'] }}" 
-PG_PORT: 5432 
-PG_USER: postgres
-PG_PASSWORD: postgres
-PG_DATABASE: postgres
+pg_host: "{{ hostvars['database']['ansible_host'] }}" 
+pg_port: 5432 
+pg_user: postgres
+pg_password: postgres
+pg_database: postgres
