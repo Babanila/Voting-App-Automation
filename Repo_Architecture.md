@@ -12,11 +12,11 @@
                          │  (Public Subnet)         │
                          │                          │
                          │  ┌────────────────────┐  │
-                         │  │ vote (port 8081)   │◄─┼── Users access app
+                         │  │ vote (port 8080)   │◄─┼── Users access app
                          │  └────────────────────┘  │
                          │                          │
                          │  ┌────────────────────┐  │
-                         │  │ result (port 8080) │◄─┼── Users view results
+                         │  │ result (port 8081) │◄─┼── Users view results
                          │  └────────────────────┘  │
                          └────────────┬─────────────┘
                                       │

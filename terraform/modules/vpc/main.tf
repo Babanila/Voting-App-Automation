@@ -134,16 +134,16 @@ resource "aws_security_group" "frontend_sg" {
 
   ingress {
     description = "Vote application port"
-    from_port   = 8081
-    to_port     = 8081
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     description = "Result application port"
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 8081
+    to_port     = 8081
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -165,14 +165,6 @@ resource "aws_security_group" "backend_sg" {
   name        = "Backend-sg"
   description = "Allow Frontend Security Group access & Redis access"
   vpc_id      = aws_vpc.custom_vpc.id
-
-  ingress {
-    description = "Allow Frontend SG access"
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    security_groups = [aws_security_group.frontend_sg.id]
-  }
 
   ingress {
     description = "Allow SSH from Frontend Security Group"
@@ -212,6 +204,14 @@ resource "aws_security_group" "database_sg" {
     description = "Allow SSH from Frontend Security Group"
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    security_groups = [aws_security_group.frontend_sg.id]
+  }
+
+  ingress {
+    description = "Allow PostgreSQL access from Frontend Security Group"
+    from_port   = 5432
+    to_port     = 5432
     protocol    = "tcp"
     security_groups = [aws_security_group.frontend_sg.id]
   }
