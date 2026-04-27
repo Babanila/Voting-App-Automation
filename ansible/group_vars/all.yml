@@ -6,7 +6,8 @@ redis_image: "{{ lookup('env', 'REDIS_IMAGE') }}"
 db_image: "{{ lookup('env', 'DB_IMAGE') }}"
 
 # SSH Configuration
-ssh_key_path: "{{ lookup('env', 'SSH_KEY_PATH') }}"
+#ssh_key_path: "{{ lookup('env', 'SSH_KEY_PATH') }}"
+ssh_key_path: /Users/iyanuwilliams/Documents/IHC/babajide-useast1-dvft.pem
 
 # Database Configuration
 db_user: "{{ lookup('env', 'DB_USER') }}"
