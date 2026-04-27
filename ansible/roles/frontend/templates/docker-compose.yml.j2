@@ -4,7 +4,7 @@ services:
   vote:
     image: {{ frontend_vote_image }}
     ports:
-      - "8081:80"
+      - "8080:80"
     environment:
       REDIS_HOST: {{ redis_host }}
     restart: always
@@ -12,10 +12,15 @@ services:
   result:
     image: {{ frontend_result_image }}
     ports:
-      - "8080:80"
+      - "8081:80"
     environment:
       DB_HOST: {{ db_host }}
       DB_NAME: {{ db_name }}
       DB_USER: {{ db_user }}
       DB_PASSWORD: {{ db_password }}
+      PG_HOST: "{{ pg_host }}" 
+      PG_PORT: "{{ pg_port }}"
+      PG_USER: "{{ pg_user }}"
+      PG_PASSWORD: "{{ pg_password }}"
+      PG_DATABASE: "{{ pg_database }}"
     restart: always
