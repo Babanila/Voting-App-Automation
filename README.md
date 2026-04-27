@@ -1,155 +1,700 @@
-<!-- © 2024 | Ironhack -->
+# Setup and Usage Guide
+
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [Prerequisites](#prerequisites)
+3. [Quick Start with Docker Compose](#quick-start-with-docker-compose)
+4. [Local Development Setup](#local-development-setup)
+5. [Cloud Deployment with Terraform & Ansible](#cloud-deployment-with-terraform--ansible)
+6. [Environment Configuration](#environment-configuration)
+7. [Accessing Services](#accessing-services)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
-# Multi-Stack Voting Application
+## Project Overview
 
-**Welcome to your DevOps practice project!** This repository hosts a multi-stack voting application composed of several services, each implemented in a different language and technology stack. The goal is to help you gain experience with containerization, orchestration, and running a distributed set of services—both individually and as part of a unified system.
+This is a **Multi-Stack Voting Application** demonstrating a distributed system with multiple services written in different languages:
 
-This application, while simple, uses multiple components commonly found in modern distributed architectures, giving you hands-on practice in connecting services, handling containers, and working with basic infrastructure automation.
+- **Vote (Python Flask)**: Web interface for voting
+- **Result (Node.js Express)**: Web interface showing vote results in real-time
+- **Worker (.NET)**: Service that processes votes from Redis and stores them in the database
+- **Redis**: In-memory queue storing incoming votes
+- **PostgreSQL**: Database for persistent vote storage
 
-## Application Overview
+### Architecture
 
-The voting application includes:
-
-- **Vote (Python)**: A Python Flask-based web application where users can vote between two options.
-- **Redis (in-memory queue)**: Collects incoming votes and temporarily stores them.
-- **Worker (.NET)**: A .NET 7.0-based service that consumes votes from Redis and persists them into a database.
-- **Postgres (Database)**: Stores votes for long-term persistence.
-- **Result (Node.js)**: A Node.js/Express web application that displays the vote counts in real time.
-
-### Why This Setup?
-
-The goal is to introduce you to a variety of languages, tools, and frameworks in one place. This is **not** a perfect production design. Instead, it’s intentionally diverse to help you:
-
-- Work with multiple runtimes and languages (Python, Node.js, .NET).
-- Interact with services like Redis and Postgres.
-- Containerize applications using Docker.
-- Use Docker Compose to orchestrate and manage multiple services together.
-
-By dealing with this “messy” environment, you’ll build real-world problem-solving skills. After this project, you should feel more confident tackling more complex deployments and troubleshooting issues in containerized, multi-service setups.
-
----
-
-## How to Run Each Component
-
-### Running the Vote Service (Python) Locally (No Docker)
-
-1. Ensure you have Python 3.10+ installed.
-2. Navigate to the `vote` directory:
-   ```bash
-   cd vote
-   pip install -r requirements.txt
-   python app.py
-   ```
-   Access the vote interface at [http://localhost:5000](http://localhost:5000).
-
-### Running Redis Locally (No Docker)
-
-1. Install Redis on your system ([https://redis.io/docs/getting-started/](https://redis.io/docs/getting-started/)).
-2. Start Redis:
-   ```bash
-   redis-server
-   ```
-   Redis will be available at `localhost:6379`.
-
-### Running the Worker (C#/.NET) Locally (No Docker)
-
-1. Ensure .NET 7.0 SDK is installed.
-2. Navigate to `worker`:
-   ```bash
-   cd worker
-   dotnet restore
-   dotnet run
-   ```
-   The worker will attempt to connect to Redis and Postgres when available.
-
-### Running Postgres Locally (No Docker)
-
-1. Install Postgres from [https://www.postgresql.org/download/](https://www.postgresql.org/download/).
-2. Start Postgres, note the username and password (default `postgres`/`postgres`):
-   ```bash
-   # On many systems, Postgres runs as a service once installed.
-   ```
-   Postgres will be available at `localhost:5432`.
-
-### Running the Result Service (Node.js) Locally (No Docker)
-
-1. Ensure Node.js 18+ is installed.
-2. Navigate to `result`:
-   ```bash
-   cd result
-   npm install
-   node server.js
-   ```
-   Access the results interface at [http://localhost:4000](http://localhost:4000).
-
-**Note:** To get the entire system working end-to-end (i.e., votes flowing through Redis, processed by the worker, stored in Postgres, and displayed by the result app), you’ll need to ensure each component is running and that connection strings or environment variables point to the correct services.
+```
+                    ┌──────────────────┐
+                    │   Users/Internet │
+                    └────────┬─────────┘
+                             │
+                ┌────────────┴────────────┐
+                │                        │
+          Vote Service (8080)     Result Service (8081)
+          (Public - Frontend)      (Public - Frontend)
+                │                        │
+                └────────────┬───────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Redis Queue    │  (Backend)
+                    │   (6379)        │
+                    └─────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Worker Service │
+                    │   (.NET)        │
+                    └────────┬────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  PostgreSQL DB  │
+                    │   (5432)        │
+                    └─────────────────┘
+```
 
 ---
 
-## Running the Entire Stack in Docker
+## Prerequisites
 
-### Building and Running Individual Services
+### For Local Development (Docker Compose)
+- **Docker** (v20.10+)
+- **Docker Compose** (v2.0+)
+- **Git**
 
-You can build each service with Docker and run them individually:
+### For Cloud Deployment
+- **Terraform** (v1.0+)
+- **Ansible** (v2.9+)
+- **AWS CLI** configured with credentials
+- **SSH key pair** for EC2 instances
+- **AWS Account** with appropriate permissions
 
-- **Vote (Python)**:
-  ```bash
-  docker build -t myorg/vote:latest ./vote
-  docker run --name vote -p 8080:80 myorg/vote:latest
-  ```
-  Visit [http://localhost:8080](http://localhost:8080).
+### For Local Component Development
+- **Python 3.10+** (for Vote service)
+- **Node.js 18+** (for Result service)
+- **.NET SDK 8.0+** (for Worker service)
+- **PostgreSQL** (for database)
+- **Redis** (for message queue)
 
-- **Redis** (official image, no build needed):
-  ```bash
-  docker run --name redis -p 6379:6379 redis:alpine
-  ```
+---
 
-- **Worker (.NET)**:
-  ```bash
-  docker build -t myorg/worker:latest ./worker
-  docker run --name worker myorg/worker:latest
-  ```
-  
-- **Postgres**:
-  ```bash
-  docker run --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15-alpine
-  ```
+## Quick Start with Docker Compose
 
-- **Result (Node.js)**:
-  ```bash
-  docker build -t myorg/result:latest ./result
-  docker run --name result -p 8081:80 myorg/result:latest
-  ```
-  Visit [http://localhost:8081](http://localhost:8081).
-
-### Using Docker Compose
-
-The easiest way to run the entire stack is via Docker Compose. From the project root directory:
-
+### 1. Clone the Repository
 ```bash
+git clone <repository-url>
+cd ironhack-project-1
+```
+
+### 2. Setup Environment File
+The `.env` file already contains default values. You can modify them if needed:
+```bash
+# View current configuration
+cat .env
+
+# Edit if needed (optional)
+nano .env
+```
+
+Key environment variables:
+```env
+FRONTEND_VOTE_IMAGE=babanila/vote:1.0
+FRONTEND_RESULT_IMAGE=babanila/result:1.0
+BACKEND_WORKER_IMAGE=babanila/worker:1.0
+REDIS_IMAGE=redis:7-alpine
+DB_IMAGE=postgres:15-alpine
+
+PORT=80
+FLASK_ENV=development
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=postgres
+```
+
+### 3. Start the Application
+```bash
+# Start all services in the background
+docker compose up -d
+
+# Or view logs as services start
 docker compose up
+
+# Or start specific services
+docker compose up -d vote result redis db worker
 ```
 
-This will:
+### 4. Verify Services Are Running
+```bash
+# Check status of all containers
+docker compose ps
 
-- Build and run the vote, worker, and result services.
-- Run Redis and Postgres from their official images.
-- Set up networks, volumes, and environment variables so all services can communicate.
+# View logs
+docker compose logs -f
 
-Visit [http://localhost:8080](http://localhost:8080) to vote and [http://localhost:8081](http://localhost:8081) to see results.
+# View specific service logs
+docker compose logs -f vote
+docker compose logs -f worker
+```
+
+### 5. Access the Services
+- **Vote Interface**: http://localhost:8080
+- **Result Interface**: http://localhost:8081
+- **PostgreSQL**: localhost:5432 (internal only)
+- **Redis**: localhost:6379 (internal only)
+
+### 6. Stop and Clean Up
+```bash
+# Stop all services (keeps data)
+docker compose down
+
+# Stop and remove all volumes (cleans everything)
+docker compose down -v
+
+# View running services
+docker compose ps
+```
 
 ---
 
-## Notes on Platforms (arm64 vs amd64)
+## Local Development Setup
 
-If you’re on an arm64 machine (e.g., Apple Silicon M1/M2) and encounter issues with images or dependencies that assume amd64, you can use Docker `buildx`:
+### Running Vote Service (Python) Locally
 
 ```bash
-docker buildx build --platform linux/amd64 -t myorg/worker:latest ./worker
+cd vote
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python app.py
+
+# Access at http://localhost:5000
 ```
 
-This ensures the image is built for the desired platform.
+**Environment variables:**
+```bash
+FLASK_ENV=development
+PORT=80
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+### Running Result Service (Node.js) Locally
+
+```bash
+cd result
+
+# Install dependencies
+npm install
+
+# Run the application
+node server.js
+
+# Access at http://localhost:4000
+```
+
+**Connections:**
+- Requires PostgreSQL running at `localhost:5432`
+- Requires Worker service processing votes
+
+### Running Worker Service (.NET) Locally
+
+```bash
+cd worker
+
+# Restore dependencies
+dotnet restore
+
+# Run the application
+dotnet run
+
+# Or build and run
+dotnet build
+./bin/Debug/net8.0/Worker
+```
+
+**Environment variables:**
+```bash
+DB_HOST=localhost
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=postgres
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
+
+### Running Redis Locally
+
+```bash
+# Using Homebrew (macOS)
+brew install redis
+brew services start redis
+
+# Using Docker
+docker run -d -p 6379:6379 redis:7-alpine
+
+# Access via CLI
+redis-cli
+```
+
+### Running PostgreSQL Locally
+
+```bash
+# Using Homebrew (macOS)
+brew install postgresql
+brew services start postgresql
+
+# Create database
+createdb voting_app
+
+# Access via psql
+psql -U postgres -d voting_app
+```
 
 ---
+
+## Cloud Deployment with Terraform & Ansible
+
+### Architecture Overview
+
+The deployment creates a 3-tier infrastructure on AWS:
+1. **Frontend EC2** (Public Subnet): Vote and Result services
+2. **Backend EC2** (Private Subnet): Worker service and Redis
+3. **Database EC2** (Private Subnet): PostgreSQL
+
+### Prerequisites for Cloud Deployment
+
+1. **AWS Credentials** configured:
+```bash
+aws configure
+# Enter: AWS Access Key ID
+# Enter: AWS Secret Access Key
+# Enter: Default region (e.g., us-east-1)
+# Enter: Default output format (json)
+```
+
+2. **SSH Key Pair** created:
+```bash
+# Create a new key pair
+aws ec2 create-key-pair --key-name babajide-useast1-dvft \
+  --region us-east-1 \
+  --query 'KeyMaterial' --output text > babajide-useast1-dvft.pem
+
+chmod 400 babajide-useast1-dvft.pem
+```
+
+3. **Update `.env` file** with your SSH key path:
+```env
+SSH_KEY_PATH=./babajide-useast1-dvft.pem
+```
+
+### Step 1: Deploy Infrastructure with Terraform
+
+```bash
+cd terraform
+
+# Initialize Terraform
+terraform init
+
+# Review the infrastructure plan
+terraform plan
+
+# Apply the infrastructure
+terraform apply -auto-approve
+
+# View outputs (note the public IPs)
+terraform output -json
+```
+
+**What gets created:**
+- VPC with public and private subnets
+- EC2 instances for frontend, backend, and database
+- Security groups with appropriate ingress/egress rules
+- S3 bucket for storage
+- Network infrastructure (NAT Gateway, Internet Gateway)
+
+### Step 2: Configure and Deploy with Ansible
+
+```bash
+cd ../ansible
+
+# Update inventory with Terraform outputs (done automatically in site.yml)
+# Or manually update inventory/dynamic.yml with EC2 instance IPs
+
+# Run the Ansible playbook
+ansible-playbook site.yml
+
+# Or with verbose output
+ansible-playbook -v site.yml
+```
+
+**What Ansible does:**
+- Installs Docker and Docker Compose on all instances
+- Deploys Vote service on frontend
+- Deploys Result service on frontend
+- Deploys Worker service on backend
+- Deploys Redis on backend
+- Deploys PostgreSQL on database instance
+- Configures networking between services
+
+### Step 3: Access Deployed Services
+
+After deployment, Terraform outputs will show public IP addresses:
+
+```bash
+# Get Terraform outputs
+terraform output
+
+# Frontend public IP will be displayed
+# Access Vote: http://<FRONTEND_PUBLIC_IP>:8080
+# Access Result: http://<FRONTEND_PUBLIC_IP>:8081
+```
+
+### Step 4: Monitor and Troubleshoot
+
+```bash
+# SSH into frontend
+ssh -i ./babajide-useast1-dvft.pem ubuntu@<FRONTEND_PUBLIC_IP>
+
+# SSH into backend (via frontend as bastion)
+ssh -i ./babajide-useast1-dvft.pem ubuntu@<BACKEND_PRIVATE_IP>
+
+# Check docker containers
+docker compose ps
+
+# View application logs
+docker compose logs -f vote
+docker compose logs -f worker
+docker compose logs -f result
+```
+
+### Step 5: Cleanup Cloud Resources
+
+```bash
+cd terraform
+
+# Destroy all infrastructure
+terraform destroy -auto-approve
+
+# Or selectively destroy
+terraform destroy -target=aws_instance.frontend
+```
+
+---
+
+## Environment Configuration
+
+### Using the `.env` File
+
+The `.env` file contains all configuration for the application:
+
+```env
+# Container Images
+FRONTEND_VOTE_IMAGE=babanila/vote:1.0
+FRONTEND_RESULT_IMAGE=babanila/result:1.0
+BACKEND_WORKER_IMAGE=babanila/worker:1.0
+REDIS_IMAGE=redis:7-alpine
+DB_IMAGE=postgres:15-alpine
+
+# SSH Configuration (for Ansible)
+SSH_KEY_PATH=./babajide-useast1-dvft.pem
+
+# Database Configuration
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=postgres
+DB_PORT=5432
+
+# Redis Configuration
+REDIS_PORT=6379
+
+# Flask Configuration
+FLASK_ENV=development
+
+# Application Configuration
+PORT=80
+PG_USER=postgres
+PG_PASSWORD=postgres
+PG_DATABASE=postgres
+```
+
+### Modifying Configuration
+
+1. **Edit `.env` file**:
+```bash
+nano .env
+```
+
+2. **For Docker Compose**, restart services:
+```bash
+docker compose down
+docker compose up -d
+```
+
+3. **For Terraform/Ansible**, re-run playbook:
+```bash
+cd ansible
+ansible-playbook site.yml
+```
+
+---
+
+## Accessing Services
+
+### Local Development
+| Service | URL | Port |
+|---------|-----|------|
+| Vote | http://localhost:8080 | 8080 |
+| Result | http://localhost:8081 | 8081 |
+| Redis | localhost:6379 | 6379 |
+| PostgreSQL | localhost:5432 | 5432 |
+
+### Cloud Deployment
+| Service | URL | Port |
+|---------|-----|------|
+| Vote | http://<FRONTEND_IP>:8080 | 8080 |
+| Result | http://<FRONTEND_IP>:8081 | 8081 |
+
+### Accessing Databases
+
+**PostgreSQL (local):**
+```bash
+psql -h localhost -U postgres -d postgres
+```
+
+**PostgreSQL (cloud - via SSH tunnel):**
+```bash
+ssh -i ./babajide-useast1-dvft.pem -L 5432:db:5432 ubuntu@<FRONTEND_PUBLIC_IP>
+psql -h localhost -U postgres -d postgres
+```
+
+**Redis CLI (local):**
+```bash
+redis-cli
+```
+
+**Redis CLI (cloud - via SSH tunnel):**
+```bash
+ssh -i ./babajide-useast1-dvft.pem -L 6379:redis:6379 ubuntu@<FRONTEND_PUBLIC_IP>
+redis-cli
+```
+
+---
+
+## Troubleshooting
+
+### Docker Compose Issues
+
+**Services not starting:**
+```bash
+# Check logs
+docker compose logs
+
+# Verify images are available
+docker images
+
+# Pull missing images
+docker compose pull
+
+# Rebuild images
+docker compose build --no-cache
+```
+
+**Connection refused errors:**
+```bash
+# Check if services are healthy
+docker compose ps
+
+# Verify network connectivity
+docker compose exec vote ping redis
+docker compose exec worker ping db
+```
+
+**Database connection errors:**
+```bash
+# Ensure database container is healthy
+docker compose exec db pg_isready -U postgres
+
+# Check environment variables
+docker compose exec worker env | grep DB_
+```
+
+### Terraform Issues
+
+**AWS credentials not found:**
+```bash
+aws configure
+# Or set environment variables:
+export AWS_ACCESS_KEY_ID=your_key
+export AWS_SECRET_ACCESS_KEY=your_secret
+export AWS_REGION=us-east-1
+```
+
+**SSH key permission errors:**
+```bash
+chmod 400 ./babajide-useast1-dvft.pem
+```
+
+**Terraform state conflicts:**
+```bash
+# Remove lock file if needed (use with caution)
+rm .terraform.tfstate.lock.hcl
+```
+
+### Ansible Issues
+
+**SSH connection timeouts:**
+```bash
+# Verify security group allows SSH (port 22)
+aws ec2 describe-security-groups
+
+# Check EC2 instance status
+aws ec2 describe-instances --query 'Reservations[].Instances[].[InstanceId,State.Name]'
+```
+
+**Inventory issues:**
+```bash
+# Verify inventory file
+cat inventory/dynamic.yml
+
+# Test connectivity
+ansible all -i inventory/dynamic.yml -m ping
+```
+
+### Application Issues
+
+**Votes not being processed:**
+1. Check Worker container logs: `docker compose logs worker`
+2. Verify Redis connection: `docker compose exec redis redis-cli`
+3. Check database schema: `docker compose exec db psql -U postgres -d postgres -c "\dt"`
+
+**Results not displaying:**
+1. Check if Worker is processing votes
+2. Verify database connectivity
+3. Check Result service logs: `docker compose logs result`
+
+### Network Issues
+
+**Services can't communicate:**
+```bash
+# Check network
+docker compose exec vote ping redis
+
+# Verify DNS resolution
+docker compose exec vote nslookup redis
+
+# Check network configuration
+docker network inspect <network_name>
+```
+
+---
+
+## Common Commands Reference
+
+### Docker Compose
+```bash
+# Start services
+docker compose up -d
+
+# Stop services
+docker compose down
+
+# View logs
+docker compose logs -f
+
+# Execute command in container
+docker compose exec vote bash
+
+# Rebuild images
+docker compose build --no-cache
+
+# View resource usage
+docker compose stats
+
+# Remove volumes
+docker compose down -v
+```
+
+### Terraform
+```bash
+# Initialize
+terraform init
+
+# Plan changes
+terraform plan
+
+# Apply infrastructure
+terraform apply
+
+# Destroy infrastructure
+terraform destroy
+
+# View outputs
+terraform output
+
+# View state
+terraform state list
+```
+
+### Ansible
+```bash
+# Run playbook
+ansible-playbook site.yml
+
+# Run with verbose output
+ansible-playbook -v site.yml
+
+# Run specific role
+ansible-playbook site.yml --tags backend
+
+# Dry run
+ansible-playbook site.yml --check
+```
+
+### AWS CLI
+```bash
+# List EC2 instances
+aws ec2 describe-instances
+
+# Get specific output
+aws ec2 describe-instances --query 'Reservations[].Instances[].[PublicIpAddress,PrivateIpAddress]'
+
+# View security groups
+aws ec2 describe-security-groups
+
+# View VPC details
+aws ec2 describe-vpcs
+```
+
+---
+
+## Next Steps
+
+1. **Test the application** by voting on the Vote interface
+2. **Monitor the system** through logs and dashboards
+3. **Customize services** by modifying Dockerfiles and application code
+4. **Scale infrastructure** by adjusting Terraform variables
+5. **Implement monitoring** with CloudWatch or Prometheus
+6. **Add CI/CD** with GitHub Actions or GitLab CI
+7. **Implement backups** for PostgreSQL data
+
+---
+
+## Documentation Links
+
+- [Docker Documentation](https://docs.docker.com/)
+- [Docker Compose Reference](https://docs.docker.com/compose/compose-file/)
+- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [Ansible Documentation](https://docs.ansible.com/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Redis Documentation](https://redis.io/documentation)
+
+---
+
+## Support
+
+For issues or questions:
+1. Check logs: `docker compose logs`
+2. Review this guide's Troubleshooting section
+3. Check individual service documentation
+4. Review architecture in `Repo_Architecture.md`
