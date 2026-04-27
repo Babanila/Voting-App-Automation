@@ -167,14 +167,6 @@ resource "aws_security_group" "backend_sg" {
   vpc_id      = aws_vpc.custom_vpc.id
 
   ingress {
-    description = "Allow Frontend SG access"
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    security_groups = [aws_security_group.frontend_sg.id]
-  }
-
-  ingress {
     description = "Allow SSH from Frontend Security Group"
     from_port   = 22
     to_port     = 22
