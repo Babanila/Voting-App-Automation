@@ -131,19 +131,19 @@ resource "aws_security_group" "frontend_sg" {
   vpc_id      = aws_vpc.custom_vpc.id
 
   ingress {
+    description = "Allow SSH from Bastion Security Group"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    security_groups = [aws_security_group.bastion_sg.id]
+  }
+
+  ingress {
     description = "HTTP from anywhere"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH from my IP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    security_groups = [aws_security_group.bastion_sg.id]
   }
 
   ingress {
@@ -181,7 +181,7 @@ resource "aws_security_group" "backend_sg" {
   vpc_id      = aws_vpc.custom_vpc.id
 
   ingress {
-    description = "Allow SSH from Frontend Security Group"
+    description = "Allow SSH from Bastion Security Group"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -215,7 +215,7 @@ resource "aws_security_group" "database_sg" {
   vpc_id      = aws_vpc.custom_vpc.id
 
   ingress {
-    description = "Allow SSH from Frontend Security Group"
+    description = "Allow SSH from Bastion Security Group"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
