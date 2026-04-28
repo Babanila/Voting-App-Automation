@@ -3,33 +3,21 @@
   hosts: localhost
   gather_facts: false
 
-  pre_tasks:
-    - name: Load environment variables from .env
-      shell: cat ../.env | grep -v '^#' | grep -v '^$'
-      register: env_output
-      changed_when: false
-
-    - name: Parse .env into dictionary
-      set_fact:
-        env_dict: "{{ env_dict | default({}) | combine({item.split('=')[0]: item.split('=')[1]}) }}"
-      loop: "{{ env_output.stdout_lines }}"
-      when: item != ""
-
   tasks:
     - name: Initialize Terraform
       command: terraform init
       args:
-        chdir: ../terraform
+        chdir: "{{ playbook_dir }}/../terraform"
 
     - name: Apply Terraform
       command: terraform apply -auto-approve
       args:
-        chdir: ../terraform
+        chdir: "{{ playbook_dir }}/../terraform"
 
     - name: Get Terraform outputs
       command: terraform output -json
       args:
-        chdir: ../terraform
+        chdir: "{{ playbook_dir }}/../terraform"
       register: tf_output
 
     - name: Parse outputs from Terraform
@@ -92,7 +80,7 @@
   tasks:
     - name: Install Python3
       raw: |
-        sudo apt update -y && sudo apt install -y python3
+        test -e /usr/bin/python3 || (sudo apt update -y && sudo apt install -y python3)
       changed_when: false
 
 
