@@ -390,32 +390,32 @@ The `.env` file contains all configuration for the application:
 
 ```env
 # Container Images
-FRONTEND_VOTE_IMAGE=babanila/vote:1.0
-FRONTEND_RESULT_IMAGE=babanila/result:1.0
-BACKEND_WORKER_IMAGE=babanila/worker:1.0
-REDIS_IMAGE=redis:7-alpine
-DB_IMAGE=postgres:15-alpine
+FRONTEND_VOTE_IMAGE="babanila/vote:1.0"
+FRONTEND_RESULT_IMAGE=b"abanila/result:1.0"
+BACKEND_WORKER_IMAGE="babanila/worker:1.0"
+REDIS_IMAGE="redis:7-alpine"
+DB_IMAGE="postgres:15-alpine"
 
 # SSH Configuration (for Ansible)
 SSH_KEY_PATH=./babajide-useast1-dvft.pem
 
 # Database Configuration
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=postgres
+DB_USER="postgres"
+DB_PASSWORD="postgres"
+DB_NAME="postgres"
 DB_PORT=5432
 
 # Redis Configuration
 REDIS_PORT=6379
 
 # Flask Configuration
-FLASK_ENV=development
+FLASK_ENV="development"
 
 # Application Configuration
 PORT=80
-PG_USER=postgres
-PG_PASSWORD=postgres
-PG_DATABASE=postgres
+PG_USER="postgres"
+PG_PASSWORD="postgres"
+PG_DATABASE="postgres"
 ```
 
 ### Modifying Configuration
