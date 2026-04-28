@@ -1,155 +1,564 @@
-<!-- © 2024 | Ironhack -->
-
----
-
 # Multi-Stack Voting Application
 
-**Welcome to your DevOps practice project!** This repository hosts a multi-stack voting application composed of several services, each implemented in a different language and technology stack. The goal is to help you gain experience with containerization, orchestration, and running a distributed set of services—both individually and as part of a unified system.
-
-This application, while simple, uses multiple components commonly found in modern distributed architectures, giving you hands-on practice in connecting services, handling containers, and working with basic infrastructure automation.
-
-## Application Overview
-
-The voting application includes:
-
-- **Vote (Python)**: A Python Flask-based web application where users can vote between two options.
-- **Redis (in-memory queue)**: Collects incoming votes and temporarily stores them.
-- **Worker (.NET)**: A .NET 7.0-based service that consumes votes from Redis and persists them into a database.
-- **Postgres (Database)**: Stores votes for long-term persistence.
-- **Result (Node.js)**: A Node.js/Express web application that displays the vote counts in real time.
-
-### Why This Setup?
-
-The goal is to introduce you to a variety of languages, tools, and frameworks in one place. This is **not** a perfect production design. Instead, it’s intentionally diverse to help you:
-
-- Work with multiple runtimes and languages (Python, Node.js, .NET).
-- Interact with services like Redis and Postgres.
-- Containerize applications using Docker.
-- Use Docker Compose to orchestrate and manage multiple services together.
-
-By dealing with this “messy” environment, you’ll build real-world problem-solving skills. After this project, you should feel more confident tackling more complex deployments and troubleshooting issues in containerized, multi-service setups.
+A production-ready distributed voting system demonstrating modern DevOps practices with infrastructure as code, containerization, and configuration management.
 
 ---
 
-## How to Run Each Component
-
-### Running the Vote Service (Python) Locally (No Docker)
-
-1. Ensure you have Python 3.10+ installed.
-2. Navigate to the `vote` directory:
-   ```bash
-   cd vote
-   pip install -r requirements.txt
-   python app.py
-   ```
-   Access the vote interface at [http://localhost:5000](http://localhost:5000).
-
-### Running Redis Locally (No Docker)
-
-1. Install Redis on your system ([https://redis.io/docs/getting-started/](https://redis.io/docs/getting-started/)).
-2. Start Redis:
-   ```bash
-   redis-server
-   ```
-   Redis will be available at `localhost:6379`.
-
-### Running the Worker (C#/.NET) Locally (No Docker)
-
-1. Ensure .NET 7.0 SDK is installed.
-2. Navigate to `worker`:
-   ```bash
-   cd worker
-   dotnet restore
-   dotnet run
-   ```
-   The worker will attempt to connect to Redis and Postgres when available.
-
-### Running Postgres Locally (No Docker)
-
-1. Install Postgres from [https://www.postgresql.org/download/](https://www.postgresql.org/download/).
-2. Start Postgres, note the username and password (default `postgres`/`postgres`):
-   ```bash
-   # On many systems, Postgres runs as a service once installed.
-   ```
-   Postgres will be available at `localhost:5432`.
-
-### Running the Result Service (Node.js) Locally (No Docker)
-
-1. Ensure Node.js 18+ is installed.
-2. Navigate to `result`:
-   ```bash
-   cd result
-   npm install
-   node server.js
-   ```
-   Access the results interface at [http://localhost:4000](http://localhost:4000).
-
-**Note:** To get the entire system working end-to-end (i.e., votes flowing through Redis, processed by the worker, stored in Postgres, and displayed by the result app), you’ll need to ensure each component is running and that connection strings or environment variables point to the correct services.
+## Table of Contents
+1. [Getting Started](#getting-started)
+2. [Files Arrangement](#files-arrangement)
+3. [Architecture](#architecture)
+4. [Features](#features)
+5. [How to Run / Demo](#how-to-run--demo)
+6. [Debugging](#debugging)
+7. [What Can Be Improved](#what-can-be-improved)
 
 ---
 
-## Running the Entire Stack in Docker
+## Getting Started
 
-### Building and Running Individual Services
+### Prerequisites
 
-You can build each service with Docker and run them individually:
+**For Local Development (Docker Compose):**
+- Docker v20.10+
+- Docker Compose v2.0+
+- Git
 
-- **Vote (Python)**:
-  ```bash
-  docker build -t myorg/vote:latest ./vote
-  docker run --name vote -p 8080:80 myorg/vote:latest
-  ```
-  Visit [http://localhost:8080](http://localhost:8080).
+**For Cloud Deployment (AWS):**
+- Terraform v1.0+
+- Ansible v2.9+
+- AWS CLI configured
+- SSH key pair for EC2 instances
 
-- **Redis** (official image, no build needed):
-  ```bash
-  docker run --name redis -p 6379:6379 redis:alpine
-  ```
+**For Local Component Development:**
+- Python 3.10+ (Vote service)
+- Node.js 18+ (Result service)
+- .NET SDK 8.0+ (Worker service)
+- PostgreSQL 15+
+- Redis 7+
 
-- **Worker (.NET)**:
-  ```bash
-  docker build -t myorg/worker:latest ./worker
-  docker run --name worker myorg/worker:latest
-  ```
-  
-- **Postgres**:
-  ```bash
-  docker run --name db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15-alpine
-  ```
-
-- **Result (Node.js)**:
-  ```bash
-  docker build -t myorg/result:latest ./result
-  docker run --name result -p 8081:80 myorg/result:latest
-  ```
-  Visit [http://localhost:8081](http://localhost:8081).
-
-### Using Docker Compose
-
-The easiest way to run the entire stack is via Docker Compose. From the project root directory:
+### Quick Start (Local with Docker Compose)
 
 ```bash
-docker compose up
+# Clone repository
+git clone [Voting-App-Automation](https://github.com/Babanila/Voting-App-Automation)
+cd Voting-App-Automation
+
+# View/edit environment configuration
+nano .env
+
+# Start all services
+docker compose up -d
+
+# Access the application
+# Vote Interface: http://localhost:8080
+# Result Interface: http://localhost:8081
+
+# Stop services
+docker compose down
 ```
 
-This will:
-
-- Build and run the vote, worker, and result services.
-- Run Redis and Postgres from their official images.
-- Set up networks, volumes, and environment variables so all services can communicate.
-
-Visit [http://localhost:8080](http://localhost:8080) to vote and [http://localhost:8081](http://localhost:8081) to see results.
-
----
-
-## Notes on Platforms (arm64 vs amd64)
-
-If you’re on an arm64 machine (e.g., Apple Silicon M1/M2) and encounter issues with images or dependencies that assume amd64, you can use Docker `buildx`:
+### Quick Start (Cloud with Terraform & Ansible)
 
 ```bash
-docker buildx build --platform linux/amd64 -t myorg/worker:latest ./worker
+# Configure AWS credentials
+aws configure
+
+# Create SSH key pair
+aws ec2 create-key-pair --key-name babajide-useast1-dvft \
+  --region us-east-1 \
+  --query 'KeyMaterial' --output text > ansible/babajide-useast1-dvft.pem
+chmod 400 ansible/babajide-useast1-dvft.pem
+
+# Deploy infrastructure (Short Way)
+# From the root folder (Voting-App-Automation)
+./deploy.sh
+
+# Deploy infrastructure (Long Way)
+cd terraform
+terraform init
+terraform apply -auto-approve
+
+# Deploy services with Ansible
+cd ../ansible
+ansible-playbook site.yml -v
+
+# Get frontend IP and access services
+cd terraform
+terraform output frontend_public_ip
+# http://<FRONTEND_IP>:8080 (Vote)
+# http://<FRONTEND_IP>:8081 (Result)
 ```
 
-This ensures the image is built for the desired platform.
+---
+
+## Files Arrangement
+
+```
+    .
+    ├── .env                          # Environment configuration
+    ├── README.md                     # Detailed setup guide
+    ├── docker-compose.yml            # Local development orchestration
+    │
+    ├── vote/                         # Python Flask voting service
+    │   ├── app.py
+    │   ├── Dockerfile
+    │   └── requirements.txt
+    │
+    ├── result/                       # Node.js results service
+    │   ├── server.js
+    │   ├── Dockerfile
+    │   └── package.json
+    │
+    ├── worker/                       # .NET vote processor
+    │   ├── Program.cs
+    │   ├── Dockerfile
+    │   └── Worker.csproj
+    │
+    ├── terraform/                    # AWS infrastructure
+    │   ├── main.tf
+    │   ├── providers.tf
+    │   ├── variables.tf
+    │   ├── outputs.tf
+    │   └── modules/
+    │       ├── vpc/
+    │       └── custom-bucket/
+    │
+    └── ansible/                      # Configuration management
+        ├── site.yml
+        ├── ansible.cfg
+        ├── group_vars/
+        │   └── all.yml
+        ├── inventory/
+        │   └── dynamic.yml
+        └── roles/
+            ├── frontend/
+            ├── backend/
+            └── database/
+```
 
 ---
+
+## Architecture
+
+### What
+
+This is a **polyglot voting application** with multiple microservices in different languages:
+
+| Service | Technology | Purpose |
+|---------|-----------|---------|
+| **Vote** | Python Flask | User interface for casting votes |
+| **Result** | Node.js Express | Real-time vote counting interface |
+| **Worker** | .NET 8.0 | Process votes from queue to database |
+| **Redis** | In-memory store | Vote queue/temporary storage |
+| **PostgreSQL** | SQL Database | Persistent vote storage |
+
+### Architecture Diagram
+
+**Local Development:**
+```
+┌──────────────────────────────┐
+│    Docker Network (Local)    │
+│                              │
+│  ┌──────────┐  ┌──────────┐  │
+│  │   Vote   │  │  Result  │  │
+│  │ (8080)   │  │  (8081)  │  │
+│  └────┬─────┘  └────┬─────┘  │
+│       │             │        │
+│       └──────┬──────┘        │
+│              │               │
+│        ┌─────▼──────┐        │
+│        │   Redis    │        │
+│        │  (6379)    │        │
+│        └─────┬──────┘        │
+│              │               │
+│        ┌─────▼──────┐        │
+│        │   Worker   │        │
+│        │   (.NET)   │        │
+│        └─────┬──────┘        │
+│              │               │
+│        ┌─────▼──────┐        │
+│        │  PostgreSQL│        │
+│        │  (5432)    │        │
+│        └────────────┘        │
+└──────────────────────────────┘
+```
+
+**Cloud Deployment (AWS):**
+```
+                    Internet
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+    ┌───▼────┐                   ┌───▼────┐
+    │  Vote  │  Frontend EC2     │Result  │
+    │(8080)  │  (Public)         │(8081)  │
+    └───┬────┘                   └───┬────┘
+        │                            │
+        └────────────┬───────────────┘
+                     │
+              ┌──────▼──────┐
+              │   Backend   │
+              │   EC2 Inst  │ (Private)
+              │             │
+              │ ┌─────────┐ │
+              │ │ Worker  │ │
+              │ │ & Redis │ │
+              │ └────┬────┘ │
+              └──────┬──────┘
+                     │
+              ┌──────▼──────┐
+              │  Database   │
+              │  EC2 Inst   │
+              │  PostgreSQL │
+              │  (Private)  │
+              └─────────────┘
+```
+
+### Who
+
+This project is designed for:
+- **DevOps Engineers** learning infrastructure as code (Terraform)
+- **SysAdmins** learning configuration management (Ansible)
+- **Developers** learning containerization and distributed systems
+- **Teams** practicing multi-language microservices architecture
+
+### Why
+
+This project demonstrates:
+- **Infrastructure as Code (IaC)** - Terraform provisioning on AWS
+- **Configuration Management** - Ansible for deployment automation
+- **Containerization** - Docker & Docker Compose for consistency
+- **Multi-tier Architecture** - Separation of concerns (Frontend, Backend, Database)
+- **Security Best Practices** - Private subnets, security groups, bastion hosts
+- **Networking** - VPC, subnets, NAT gateways, security group rules
+- **Polyglot Development** - Python, Node.js, .NET working together
+
+---
+
+## Features
+
+✅ **Infrastructure as Code (Terraform)**
+- Automatic AWS VPC provisioning
+- Multi-tier subnet architecture (public/private)
+- Auto-scaling security groups
+- S3 bucket for storage
+- Terraform state management
+
+✅ **Configuration Management (Ansible)**
+- Automatic Docker installation
+- Service deployment and orchestration
+- SSH key-based authentication
+- Bastion host support (ProxyJump)
+- Template-based configuration files (Jinja2)
+
+✅ **Containerization (Docker & Docker Compose)**
+- Pre-built images for all services
+- Health checks and automated restarts
+- Network isolation and communication
+- Volume management for persistent data
+
+✅ **Multi-Language Support**
+- Python (Vote service)
+- Node.js (Result service)
+- .NET (Worker service)
+- Works together in a single application
+
+✅ **Production-Ready**
+- Environment variable configuration
+- Error handling and retry logic
+- Service health checks
+- Logging and monitoring hooks
+- Security hardening (non-root users, closed ports)
+
+---
+
+## How to Run / Demo
+
+### Local Development (Docker Compose)
+
+**1. Start the application:**
+```bash
+docker compose up -d
+```
+
+**2. Cast a vote:**
+- Open http://localhost:8080
+- Vote for your choice
+- Submit your vote
+
+**3. View results:**
+- Open http://localhost:8081
+- Results update in real-time
+
+**4. Check logs:**
+```bash
+# View all logs
+docker compose logs -f
+
+# View specific service
+docker compose logs -f vote
+docker compose logs -f worker
+docker compose logs -f result
+```
+
+**5. Verify data in database:**
+```bash
+# Connect to PostgreSQL
+docker compose exec db psql -U postgres -d postgres
+
+# View votes table
+\dt
+SELECT * FROM votes;
+```
+
+### Cloud Deployment (Terraform + Ansible)
+
+**1. Deploy infrastructure:**
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply -auto-approve
+terraform output  # Save these values
+```
+
+**2. Deploy services:**
+```bash
+cd ../ansible
+ansible-playbook site.yml -v
+```
+
+**3. Access application:**
+```bash
+# Get frontend public IP
+terraform output frontend_public_ip
+
+# Vote: http://<IP>:8080
+# Results: http://<IP>:8081
+```
+
+**4. Monitor services:**
+```bash
+# SSH into frontend
+ssh -i ansible/babajide-useast1-dvft.pem ubuntu@<FRONTEND_IP>
+
+# Check containers
+docker compose ps
+
+# View logs
+docker compose logs -f vote
+```
+
+**5. Clean up:**
+```bash
+cd terraform
+terraform destroy -auto-approve
+```
+
+---
+
+## Debugging
+
+### Common Issues & Solutions
+
+#### Docker Compose Issues
+
+**Services failing to start:**
+```bash
+# Check container logs
+docker compose logs vote
+
+# Verify images exist
+docker images | grep babanila
+
+# Rebuild images
+docker compose build --no-cache
+```
+
+**"Image must be a string" error:**
+- Environment variables not loaded
+- Solution: Export `.env` before running
+  ```bash
+  export $(cat .env | grep -v '^#' | xargs)
+  docker compose up -d
+  ```
+
+**Connection refused between services:**
+```bash
+# Check service health
+docker compose ps
+
+# Test connectivity
+docker compose exec vote ping redis
+
+# Check network
+docker network ls
+docker network inspect <network_name>
+```
+
+#### Terraform Issues
+
+**"AWS credentials not found":**
+```bash
+aws configure
+# Or set environment variables:
+export AWS_ACCESS_KEY_ID=your_key
+export AWS_SECRET_ACCESS_KEY=your_secret
+export AWS_REGION=us-east-1
+```
+
+**"Permission denied" for SSH key:**
+```bash
+sudo chmod 400 ansible/babajide-useast1-dvft.pem
+```
+
+**Terraform state locked:**
+```bash
+# Remove lock file (use carefully!)
+rm .terraform.tfstate.lock.hcl
+```
+
+#### Ansible Issues
+
+**"Could not match supplied host pattern":**
+- Hosts haven't been created yet
+- Solution: Run full playbook first
+  ```bash
+  ansible-playbook site.yml
+  ```
+
+**SSH connection timeout:**
+```bash
+# Verify security group allows SSH (port 22)
+aws ec2 describe-security-groups
+
+# Check instance status
+aws ec2 describe-instances --query \
+  'Reservations[].Instances[].[InstanceId,State.Name]'
+```
+
+**Null variable in Jinja2 template:**
+```bash
+# Ensure environment variables are exported
+set -a && source .env && set +a
+ansible-playbook site.yml -v
+```
+
+#### Application Issues
+
+**Votes not processing:**
+1. Check Worker logs: `docker compose logs worker`
+2. Verify Redis: `docker compose exec redis redis-cli PING`
+3. Check database connection: `docker compose logs db`
+
+**Results not displaying:**
+1. Verify Worker is running
+2. Check database has votes: `docker compose exec db psql -U postgres -d postgres -c "SELECT * FROM votes;"`
+3. Check Result service logs: `docker compose logs result`
+
+**Database errors:**
+```bash
+# Check database health
+docker compose exec db pg_isready -U postgres
+
+# View database logs
+docker compose logs db
+
+# Connect to database
+docker compose exec db psql -U postgres
+```
+
+### Debugging Commands
+
+```bash
+# Container inspection
+docker compose ps
+docker compose logs -f <service>
+docker compose exec <service> bash
+
+# Network debugging
+docker compose exec <service> ping <other_service>
+docker compose exec <service> nslookup <other_service>
+
+# Database access
+docker compose exec db psql -U postgres -d postgres
+redis-cli  # if running locally
+
+# AWS resources
+aws ec2 describe-instances
+aws ec2 describe-security-groups
+aws vpc describe-vpcs
+
+# Ansible debugging
+ansible-playbook site.yml --check  # Dry run
+ansible-playbook site.yml -vvv     # Very verbose
+ansible all -m ping                # Test connectivity
+```
+
+---
+
+## What Can Be Improved
+
+   - [ ] Add Application Load Balancer (ALB)
+   - [ ] Configure Auto Scaling Groups
+   - [ ] Implement multi-AZ deployment
+   - [ ] Integrate CloudWatch for AWS monitoring
+   - [ ] GitHub Actions workflow for automated testing
+   - [ ] Implement secrets management (AWS Secrets Manager)
+   - [ ] Rotate database credentials automatically
+   - [ ] Automated rollback on failure
+   - [ ] PostgreSQL automated backups to S3
+   - [ ] Add caching layer (CloudFront CDN)
+   - [ ] Migrate to Kubernetes (EKS) for orchestration
+
+
+---
+
+## Quick Reference
+
+### Docker Compose Commands
+```bash
+docker compose up -d              # Start all services
+docker compose down               # Stop all services
+docker compose logs -f            # View logs
+docker compose ps                 # List running containers
+docker compose exec <svc> bash    # Access container shell
+```
+
+### Terraform Commands
+```bash
+terraform init                    # Initialize
+terraform plan                    # Preview changes
+terraform apply -auto-approve     # Deploy
+terraform destroy -auto-approve   # Destroy all resources
+terraform output                  # Show outputs
+```
+
+### Ansible Commands
+```bash
+ansible-playbook site.yml         # Run playbook
+ansible-playbook -v site.yml      # Verbose output
+ansible-playbook --check site.yml # Dry run
+ansible all -m ping               # Test connectivity
+```
+
+---
+
+## Support & Documentation
+
+- [Docker Documentation](https://docs.docker.com/)
+- [Terraform Documentation](https://www.terraform.io/docs)
+- [Ansible Documentation](https://docs.ansible.com/)
+- [AWS Documentation](https://docs.aws.amazon.com/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+
+---
+
+## License
+
+© 2026 Babajide
+
+---
+
+**Last Updated:** April 28, 2026
