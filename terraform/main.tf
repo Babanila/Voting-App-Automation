@@ -78,7 +78,7 @@ resource "aws_instance" "database" {
   depends_on = [module.custom_vpc]
 }
 
-resource "aws_instace" "bastion"{
+resource "aws_instance" "bastion" {
   ami                         = var.ami_id
   instance_type               = var.instance_type
   subnet_id                   = module.custom_vpc.public_subnet_id
