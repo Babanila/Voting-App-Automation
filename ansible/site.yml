@@ -85,22 +85,23 @@
 
 # Bootstrap Python because it's required for Ansible
 - name: Bootstrap Python on all nodes
-  hosts: frontend:backend:database
+  hosts: bastion:frontend:backend:database
   gather_facts: false
   become: true
 
   tasks:
     - name: Install Python3
       raw: |
-        test -e /usr/bin/python3 || (sudo apt update -y && sudo apt install -y python3)
+        test -e /usr/bin/python3 || (apt update -y && apt install -y python3)
       changed_when: false
 
 
 - name: Configure all nodes
-  hosts: bastion:frontend:backend:database
+  hosts: frontend:backend:database
   become: true
   roles:
     - common
+    - cloudwatch
 
 - name: Configure frontend node
   hosts: frontend
