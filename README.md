@@ -186,33 +186,34 @@ This is a **polyglot voting application** with multiple microservices in differe
 
 **Cloud Deployment (AWS):**
 ```
-                    Internet
-                       │
-        ┌──────────────┴──────────────┐
-        │                             │
-    ┌───▼────┐                   ┌───▼────┐
-    │  Vote  │  Frontend EC2     │Result  │
-    │(8080)  │  (Public)         │(8081)  │
-    └───┬────┘                   └───┬────┘
-        │                            │
-        └────────────┬───────────────┘
-                     │
-              ┌──────▼──────┐
-              │   Backend   │
-              │   EC2 Inst  │ (Private)
-              │             │
-              │ ┌─────────┐ │
-              │ │ Worker  │ │
-              │ │ & Redis │ │
-              │ └────┬────┘ │
-              └──────┬──────┘
-                     │
-              ┌──────▼──────┐
-              │  Database   │
-              │  EC2 Inst   │
-              │  PostgreSQL │
-              │  (Private)  │
-              └─────────────┘
+                        Internet
+                           │
+                      ┌────▼────┐
+                      │ Bastion │ (Public EC2)
+                      │ Host    │ SSH Entry Point
+                      └────┬────┘
+                           │
+           ┌───────────────┼──────────────────┐
+           │               │                  │
+           │ SSH ProxyJump │                  │
+           │               │                  │
+    ┌──────▼────────┐  ┌───▼──────────┐  ┌----▼─────────┐
+    │  Frontend     │  │   Backend    │  │  Database    │
+    │  EC2 (Public) │  │ EC2(Private) │  │ EC2(Private) │
+    │               │  │              │  │              │
+    │ ┌──────────┐  │  │ ┌──────────┐ │  │ ┌──────────┐ │
+    │ │   Vote   │  │  │ │ Worker   │ │  │ │PostgreSQL│ │
+    │ │ (8080)   │  │  │ │  (C#)    │ │  │ │ (5432)   │ │
+    │ └──────────┘  │  │ └────┬─────┘ │  │ └──────────┘ │
+    │ ┌──────────┐  │  │ ┌────▼─────┐ │  └──────────────┘
+    │ │  Result  │  │  │ │  Redis   │ │
+    │ │ (8081)   │  │  │ │ (6379)   │ │
+    │ └──────────┘  │  │ └──────────┘ │
+    └──────────────┘  └──────────────┘
+         ▲                    ▲               ▲
+         └────────────────────┼───────────────┘
+                    Managed by Ansible
+                 (via Bastion ProxyJump)
 ```
 
 ### Who
