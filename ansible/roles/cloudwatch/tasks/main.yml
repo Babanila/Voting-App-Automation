@@ -1,95 +1,94 @@
 ---
-
 - name: Download CloudWatch Agent
   get_url:
-  url: https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
-  dest: /tmp/amazon-cloudwatch-agent.deb
-  mode: '0644'
+    url: https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+    dest: /tmp/amazon-cloudwatch-agent.deb
+    mode: "0644"
 
 - name: Install CloudWatch Agent
   apt:
-  deb: /tmp/amazon-cloudwatch-agent.deb
-  state: present
+    deb: /tmp/amazon-cloudwatch-agent.deb
+    state: present
 
 - name: Create CloudWatch config directory
   file:
-  path: /opt/aws/amazon-cloudwatch-agent/etc
-  state: directory
-  mode: '0755'
+    path: /opt/aws/amazon-cloudwatch-agent/etc
+    state: directory
+    mode: "0755"
 
 - name: Create CloudWatch Agent config file
   copy:
-  dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-  mode: '0644'
-  content: |
-    {
-      "agent": {
-        "run_as_user": "root"
-      },
-      "logs": {
-        "logs_collected": {
-          "files": {
-            "collect_list": [
-              {
-                "file_path": "/var/lib/docker/containers/*/*.log",
-                "log_group_name": "/aws/ec2/docker/{{ inventory_hostname }}",
-                "log_stream_name": "docker-container-logs"
-              },
-              {
-                "file_path": "/var/log/syslog",
-                "log_group_name": "/aws/ec2/system/{{ inventory_hostname }}",
-                "log_stream_name": "system-logs",
-                "timestamp_format": "%b %d %H:%M:%S"
-              },
-              {
-                "file_path": "/var/log/docker.log",
-                "log_group_name": "/aws/ec2/docker/{{ inventory_hostname }}",
-                "log_stream_name": "docker-daemon-logs",
-                "timestamp_format": "%b %d %H:%M:%S"
-              }
-            ]
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    mode: "0644"
+    content: |
+      {
+        "agent": {
+          "run_as_user": "root"
+        },
+        "logs": {
+          "logs_collected": {
+            "files": {
+              "collect_list": [
+                {
+                  "file_path": "/var/lib/docker/containers/*/*.log",
+                  "log_group_name": "/aws/ec2/docker/{{ inventory_hostname }}",
+                  "log_stream_name": "docker-container-logs"
+                },
+                {
+                  "file_path": "/var/log/syslog",
+                  "log_group_name": "/aws/ec2/system/{{ inventory_hostname }}",
+                  "log_stream_name": "system-logs",
+                  "timestamp_format": "%b %d %H:%M:%S"
+                },
+                {
+                  "file_path": "/var/log/docker.log",
+                  "log_group_name": "/aws/ec2/docker/{{ inventory_hostname }}",
+                  "log_stream_name": "docker-daemon-logs",
+                  "timestamp_format": "%b %d %H:%M:%S"
+                }
+              ]
+            }
           }
-        }
-      },
-      "metrics": {
-        "metrics_collected": {
-          "cpu": {
-            "measurement": [
-              {
-                "name": "cpu_usage_idle",
-                "rename": "CPU_USAGE_IDLE",
-                "unit": "Percent"
-              }
-            ],
-            "metrics_collection_interval": 60,
-            "totalcpu": false
-          },
-          "mem": {
-            "measurement": [
-              {
-                "name": "mem_used_percent",
-                "rename": "MEM_USED_PERCENT",
-                "unit": "Percent"
-              }
-            ],
-            "metrics_collection_interval": 60
-          },
-          "disk": {
-            "measurement": [
-              {
-                "name": "used_percent",
-                "rename": "DISK_USED_PERCENT",
-                "unit": "Percent"
-              }
-            ],
-            "metrics_collection_interval": 60,
-            "resources": [
-               "/"
-            ]
+        },
+        "metrics": {
+          "metrics_collected": {
+            "cpu": {
+              "measurement": [
+                {
+                  "name": "cpu_usage_idle",
+                  "rename": "CPU_USAGE_IDLE",
+                  "unit": "Percent"
+                }
+              ],
+              "metrics_collection_interval": 60,
+              "totalcpu": false
+            },
+            "mem": {
+              "measurement": [
+                {
+                  "name": "mem_used_percent",
+                  "rename": "MEM_USED_PERCENT",
+                  "unit": "Percent"
+                }
+              ],
+              "metrics_collection_interval": 60
+            },
+            "disk": {
+              "measurement": [
+                {
+                  "name": "used_percent",
+                  "rename": "DISK_USED_PERCENT",
+                  "unit": "Percent"
+                }
+              ],
+              "metrics_collection_interval": 60,
+              "resources": [
+                "/"
+              ]
+            }
           }
         }
       }
-    }
 
 - name: Apply and start CloudWatch Agent
   command: >
@@ -98,3 +97,28 @@
     -m ec2
     -s
     -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+- name: Check CloudWatch Agent status
+  command: >
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+    -a status
+    -m ec2
+  register: cw_status
+  changed_when: false
+  become: true
+  retries: 5
+  delay: 5
+  until: (cw_status.stdout | default('{}') | from_json).status == "running"
+
+- name: Parse CloudWatch Agent status JSON
+  set_fact:
+    cw_status_parsed: "{{ cw_status.stdout | from_json }}"
+
+- name: Display CloudWatch Agent status
+  debug:
+    var: cw_status_parsed
+
+- name: Fail if CloudWatch Agent is not running
+  fail:
+    msg: "CloudWatch Agent is not running"
+  when: cw_status_parsed.status != "running"
