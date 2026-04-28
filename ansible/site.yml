@@ -7,17 +7,17 @@
     - name: Initialize Terraform
       command: terraform init
       args:
-        chdir: ../terraform
+        chdir: "{{ playbook_dir }}/../terraform"
 
     - name: Apply Terraform
       command: terraform apply -auto-approve
       args:
-        chdir: ../terraform
+        chdir: "{{ playbook_dir }}/../terraform"
 
     - name: Get Terraform outputs
       command: terraform output -json
       args:
-        chdir: ../terraform
+        chdir: "{{ playbook_dir }}/../terraform"
       register: tf_output
 
     - name: Parse outputs from Terraform
@@ -80,7 +80,7 @@
   tasks:
     - name: Install Python3
       raw: |
-        sudo apt update -y && sudo apt install -y python3
+        test -e /usr/bin/python3 || (sudo apt update -y && sudo apt install -y python3)
       changed_when: false
 
 
