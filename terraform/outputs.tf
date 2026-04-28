@@ -37,3 +37,7 @@ output "backend_sg_private_ip" {
 output "database_sg_private_ip" {
   value = module.custom_vpc.database_sg_id
 }
+
+output "bastion_public_ip" {
+  value = aws_instance.bastion.public_ip
+}
