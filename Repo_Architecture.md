@@ -3,7 +3,7 @@
 ## Architecture Diagram (3-Tier + Redis on Backend)
 
                          ┌──────────────────────────┐
-                         │        Internet          │
+                         │        Bastion           │
                          └────────────┬─────────────┘
                                       │
                                       ▼
@@ -11,12 +11,12 @@
                          │     Frontend EC2         │
                          │  (Public Subnet)         │
                          │                          │
-                         │  ┌────────────────────┐  │
-                         │  │ vote (port 8080)   │◄─┼── Users access app
-                         │  └────────────────────┘  │
+                         │  ┌────────────────────┐  │             ┌──────────────────────────┐
+    Users access app  ───┼─>│ vote (port 8080)   │  |◄─────────── │        Internet          │
+                         │  └────────────────────┘  │             └──────────────────────────┘
                          │                          │
                          │  ┌────────────────────┐  │
-                         │  │ result (port 8081) │◄─┼── Users view results
+    Users view results ──┼─>│ result (port 8081) │  |
                          │  └────────────────────┘  │
                          └────────────┬─────────────┘
                                       │
@@ -33,7 +33,7 @@
                          │  └─────────┬──────────┘  │
                          │            │             │
                          │  ┌─────────▼──────────┐  │
-                         │  │ redis (port 6379) │◄─┼── Frontend connects here
+                         │  │ redis (port 6379)  │◄─┼── Frontend connects here
                          │  └────────────────────┘  │
                          └────────────┬─────────────┘
                                       │
@@ -46,6 +46,7 @@
                          │  │ postgres (5432)    │◄─┼── Backend connects here
                          │  └────────────────────┘  │
                          └──────────────────────────┘
+
 
 ## Repository Arrangment
 voting-app-devops/
@@ -121,7 +122,8 @@ site.yml
 ## Ansible orchestrator (Ansible SSHes THROUGH frontend)
 Ansible (local/CI)
     │
-    └── SSH → Frontend (public EC2)
+    └── SSH → Bastion (public EC2)
             │
+            |── SSH → Frontend (public & private EC2)
             |── SSH → Backend (private EC2)
             └── SSH → Database (private EC2)
