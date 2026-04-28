@@ -77,3 +77,18 @@ resource "aws_instance" "database" {
 
   depends_on = [module.custom_vpc]
 }
+
+resource "aws_instace" "bastion"{
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  subnet_id                   = module.custom_vpc.public_subnet_id
+  vpc_security_group_ids      = [module.custom_vpc.bastion_sg_id]
+  key_name                    = var.key_pair_name
+  associate_public_ip_address = true
+
+  tags = {
+    Name = var.ec2_instances["bastion"]
+  }
+
+  depends_on = [module.custom_vpc]
+}
