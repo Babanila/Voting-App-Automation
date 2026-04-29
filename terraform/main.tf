@@ -30,6 +30,54 @@ module "custom_vpc" {
 }
 
 
+# CloudWatch Log Groups
+resource "aws_cloudwatch_log_group" "docker_logs" {
+  name              = "/aws/ec2/docker/all"
+  retention_in_days = 7
+
+  tags = {
+    Name = "docker-logs-${var.author_name}"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "system_logs" {
+  name              = "/aws/ec2/system/all"
+  retention_in_days = 7
+
+  tags = {
+    Name = "system-logs-${var.author_name}"
+  }
+}
+
+# CloudWatch IAM Role
+resource "aws_iam_role" "cloudwatch_role" {
+  name = "ec2-cloudwatch-role-${var.author_name}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+}
+
+# Attach CloudWatch policy to role
+resource "aws_iam_role_policy_attachment" "cloudwatch_policy" {
+  role       = aws_iam_role.cloudwatch_role.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# Instance profile for EC2
+resource "aws_iam_instance_profile" "cloudwatch_profile" {
+  name = "ec2-cloudwatch-profile-${var.author_name}"
+  role = aws_iam_role.cloudwatch_role.name
+}
+
+
 # FRONTEND (Public)
 resource "aws_instance" "frontend" {
   ami                         = var.ami_id
@@ -38,6 +86,7 @@ resource "aws_instance" "frontend" {
   vpc_security_group_ids      = [module.custom_vpc.frontend_sg_id]
   key_name                    = var.key_pair_name
   associate_public_ip_address = true
+  iam_instance_profile        = aws_iam_instance_profile.cloudwatch_profile.name
 
   tags = {
     Name = var.ec2_instances["frontend"]
@@ -54,6 +103,7 @@ resource "aws_instance" "backend" {
   subnet_id              = module.custom_vpc.private_subnet_id
   vpc_security_group_ids = [module.custom_vpc.backend_sg_id]
   key_name               = var.key_pair_name
+  iam_instance_profile   = aws_iam_instance_profile.cloudwatch_profile.name
 
   tags = {
     Name = var.ec2_instances["backend"]
@@ -70,6 +120,7 @@ resource "aws_instance" "database" {
   subnet_id              = module.custom_vpc.private_subnet_id
   vpc_security_group_ids = [module.custom_vpc.database_sg_id]
   key_name               = var.key_pair_name
+  iam_instance_profile   = aws_iam_instance_profile.cloudwatch_profile.name
 
   tags = {
     Name = var.ec2_instances["database"]

@@ -1,4 +1,4 @@
-# Multi-Stack Voting Application
+# Multi-Stack Voting Application Automation
 
 A production-ready distributed voting system demonstrating modern DevOps practices with infrastructure as code, containerization, and configuration management.
 
@@ -96,35 +96,62 @@ terraform output frontend_public_ip
 
 ```
     .
-    ├── .env                          # Environment configuration
-    ├── README.md                     # Detailed setup guide
-    ├── docker-compose.yml            # Local development orchestration
+    ├── .env
+    ├── README.md
+    ├── docker-compose.yml
+    ├── Dockerfile
     │
-    ├── vote/                         # Python Flask voting service
+    ├── vote/
     │   ├── app.py
     │   ├── Dockerfile
-    │   └── requirements.txt
+    │   ├── requirements.txt
+    │   ├── static/
+    │   │   └── stylesheets/
+    │   │       └── style.css
+    │   └── templates/
+    │       └── index.html
     │
-    ├── result/                       # Node.js results service
+    ├── result/
     │   ├── server.js
     │   ├── Dockerfile
-    │   └── package.json
+    │   ├── package.json
+    │   ├── views/
+    │   │   ├── app.js
+    │   │   ├── index.html
+    │   │   ├── socket.io.js
+    │   │   ├── angular.min.js
+    │   │   └── stylesheets/
+    │   │       └── style.css
     │
-    ├── worker/                       # .NET vote processor
+    ├── worker/
     │   ├── Program.cs
     │   ├── Dockerfile
-    │   └── Worker.csproj
+    │   ├── Worker.csproj
+    │   └── obj/
     │
-    ├── terraform/                    # AWS infrastructure
+    ├── healthchecks/
+    │   ├── postgres.sh
+    │   └── redis.sh
+    │
+    ├── terraform/
     │   ├── main.tf
     │   ├── providers.tf
     │   ├── variables.tf
     │   ├── outputs.tf
+    │   ├── terraform.tfvars
+    │   ├── terraform.tfstate
+    │   ├── terraform.tfstate.backup
     │   └── modules/
     │       ├── vpc/
+    │       │   ├── main.tf
+    │       │   ├── outputs.tf
+    │       │   └── variables.tf
     │       └── custom-bucket/
+    │           ├── main.tf
+    │           ├── outputs.tf
+    │           └── variables.tf
     │
-    └── ansible/                      # Configuration management
+    └── ansible/
         ├── site.yml
         ├── ansible.cfg
         ├── group_vars/
@@ -132,9 +159,21 @@ terraform output frontend_public_ip
         ├── inventory/
         │   └── dynamic.yml
         └── roles/
+            ├── common/
+            │   └── tasks/
+            │       └── main.yml
+            ├── cloudwatch/
+            │   └── tasks/
+            │       └── main.yml
             ├── frontend/
+            │   └── tasks/
+            │       └── main.yml
             ├── backend/
+            │   └── tasks/
+            │       └── main.yml
             └── database/
+                └── tasks/
+                    └── main.yml
 ```
 
 ---
