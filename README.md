@@ -9,9 +9,10 @@ A production-ready distributed voting system demonstrating modern DevOps practic
 2. [Files Arrangement](#files-arrangement)
 3. [Architecture](#architecture)
 4. [Features](#features)
-5. [How to Run / Demo](#how-to-run--demo)
-6. [Debugging](#debugging)
-7. [What Can Be Improved](#what-can-be-improved)
+5. [Product Automation Board](#product-board)
+6. [How to Run / Demo](#how-to-run--demo)
+7. [Debugging](#debugging)
+8. [What Can Be Improved](#what-can-be-improved)
 
 ---
 
@@ -312,6 +313,11 @@ This project demonstrates:
 - Security hardening (non-root users, closed ports)
 
 ---
+
+## JIRA Board
+This project can be view on the Atlassian board using the link below:
+[Product Automation Board](https://product-automation.atlassian.net/jira/software/c/projects/VAA/boards/2)
+
 
 ## How to Run / Demo
 
