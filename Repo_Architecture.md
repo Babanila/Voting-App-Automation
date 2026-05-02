@@ -127,3 +127,7 @@ Ansible (local/CI)
             |── SSH → Frontend (public & private EC2)
             |── SSH → Backend (private EC2)
             └── SSH → Database (private EC2)
+
+
+## JIRA Board
+[Product Automation Board](https://product-automation.atlassian.net/jira/software/c/projects/VAA/boards/2)
